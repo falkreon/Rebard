@@ -1,4 +1,4 @@
-package bard;
+package blue.endless.rebard;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,8 +17,6 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Synthesizer;
 import javax.sound.midi.Track;
-
-import org.omg.CosNaming.IstringHelper;
 
 public class MidiParser {
 

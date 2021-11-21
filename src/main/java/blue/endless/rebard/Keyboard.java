@@ -1,4 +1,4 @@
-package bard;
+package blue.endless.rebard;
 
 import java.awt.event.KeyEvent;
 
