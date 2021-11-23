@@ -265,7 +265,7 @@ public class GUI {
 		gbPanel1.setConstraints( lbLabel4, gbcPanel1 );
 		pnPanel1.add( lbLabel4 );
 
-		String []dataOctaveTargetCombo = {"-1", "0", "1", "2", "3", "4", "5 (Default)", "6", "7", "8", "9"};
+		//String [] dataOctaveTargetCombo = {"-1", "0", "1", "2", "3", "4", "5 (Default)", "6", "7", "8", "9"};
 		//cmbOctaveTargetCombo = new JComboBox( dataOctaveTargetCombo );
 		gbcPanel1.gridx = 4;
 		gbcPanel1.gridy = 1;
@@ -366,7 +366,7 @@ public class GUI {
 					keyFrame.setSize(icon.getIconWidth()+25, icon.getIconHeight()+50);
 					keyFrame.setTitle("TBbard - Full keyboard layout");
 					keyFrame.setIconImage(new ImageIcon(Main.class.getResource("/icon.png")).getImage());
-					keyFrame.setVisible(true);                        
+					keyFrame.setVisible(true);
 				} catch (Exception ex) {
 					//It looks like there's a problem
 				}
@@ -394,7 +394,7 @@ public class GUI {
 		holdCheckBox.setSelected(Settings.LoadBool("hold"));
 
 
-		String[] dataSelectedInstrument = { "" };
+		//String[] dataSelectedInstrument = { "" };
 		//cmbSelectedInstrument = new JComboBox( dataSelectedInstrument );
 		gbcPanel1.gridx = 3;
 		gbcPanel1.gridy = 2;
@@ -475,7 +475,7 @@ public class GUI {
 
 					//int selectedInstrument = is.showDialogue();
 					//System.out.println(cmbSelectedInstrument.getSelectedIndex());
-					//midi.getNotes(filePath, cmbSelectedInstrument.getSelectedIndex(), cmbOctaveTargetCombo.getSelectedIndex()-1, holdCheckBox.isSelected());
+					midi.getNotes(filePath, 0, 5, holdCheckBox.isSelected());
 					//Update instruments
 					//cmbSelectedInstrument.removeAllItems();
 					for(String instrument : midi.shownInstruments){
@@ -488,10 +488,14 @@ public class GUI {
 					//DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>(midi.getOctaveQuality((String)cmbSelectedInstrument.getSelectedItem()));
 					//cmbOctaveTargetCombo.setModel(model);
 					//cmbOctaveTargetCombo.setSelectedIndex(midi.getHighestQualityOctave((String)cmbSelectedInstrument.getSelectedItem()));
-					//taText.setText(midi.getSheet((String)cmbSelectedInstrument.getSelectedItem(), cmbOctaveTargetCombo.getSelectedIndex()));
-
-
-					setOpenFile(frame, new File(filePath).getName());
+					taText.setText(midi.getSheet(0, 5/*cmbOctaveTargetCombo.getSelectedIndex()*/));
+					String fileName = new File(filePath).getName();
+					if (fileName.isEmpty()) {
+						frame.setTitle("Rebard");
+					} else {
+						frame.setTitle("Rebard - "+fileName);
+					}
+					//setOpenFile(frame, new File(filePath).getName());
 				} catch (Exception ex) {
 					ex.printStackTrace();
 				}
@@ -502,10 +506,17 @@ public class GUI {
 
 
 		taText.setDropTarget(new DropTarget() {
+			private static final long serialVersionUID = 1L;
+
 			public synchronized void drop(DropTargetDropEvent evt) {
 				try {
 					evt.acceptDrop(DnDConstants.ACTION_COPY);
+					
+					@SuppressWarnings("unchecked")
 					List<File> droppedFiles = (List<File>) evt.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
+					
+					if (droppedFiles.size()==0) return; //Not likely but you know how computers are.
+					
 					filePath = droppedFiles.get(0).getPath();
 					frame.setTitle("Processing...");
 					midi = new MidiParser(filePath, trueTimingsCheckBox.isSelected());
@@ -542,8 +553,13 @@ public class GUI {
 					//cmbOctaveTargetCombo.setSelectedIndex(midi.getHighestQualityOctave((String)cmbSelectedInstrument.getSelectedItem()));
 					//taText.setText(midi.getSheet((String)cmbSelectedInstrument.getSelectedItem(), cmbOctaveTargetCombo.getSelectedIndex()));
 
-
-					setOpenFile(frame, new File(filePath).getName());
+					String fileName = new File(filePath).getName();
+					if (fileName.isEmpty()) {
+						frame.setTitle("Rebard");
+					} else {
+						frame.setTitle("Rebard - "+fileName);
+					}
+					//setOpenFile(frame, new File(filePath).getName());
 
 				} catch (Exception ex) {
 					ex.printStackTrace();
@@ -619,19 +635,19 @@ public class GUI {
 							Settings.SaveInt("delay", (int)spnDelaySpinner.getValue());
 							Settings.SaveDouble("waitmult", (double)spnCd.getValue());
 							Notes n = new Notes((int) spnFpsSpinner.getValue());
-							n.running = true;
-							n.holdNotes = holdCheckBox.isSelected();
-							n.fullKeyboard = keyboardCheckBox.isSelected();
-							n.waitMultiplier = (double)spnCd.getValue();
-							n.slowdownConstant = (int) Math.ceil((double) 1000/(int)spnFpsSpinner.getValue());
+							//n.running = true;
+							//n.holdNotes = holdCheckBox.isSelected();
+							//n.fullKeyboard = keyboardCheckBox.isSelected();
+							//n.waitMultiplier = (double)spnCd.getValue();
+							//n.slowdownConstant = (int) Math.ceil((double) 1000/(int)spnFpsSpinner.getValue());
 							double countdown = Math.ceil(((int)spnDelaySpinner.getValue()));
 							countdownThread = this;
 							while(countdown > 0){
-								if(n.running == false){
-									System.out.println("Stopping countdown.");
-									btPlayButton.setText("Play");
-									return;
-								}
+								//if(n.running == false){
+								//	System.out.println("Stopping countdown.");
+								//	btPlayButton.setText("Play");
+								//	return;
+								//}
 								System.out.println("Countdown (ms): " + countdown);
 								btPlayButton.setText((int)countdown + "...");
 								Thread.sleep(1000);
@@ -650,7 +666,7 @@ public class GUI {
 								taText.getCaret().setSelectionVisible(true);
 								String[] splitLines = text.split("\\n");
 								for (int i = 0; i < splitLines.length; i++){
-									if(n.running == false) break;
+									//if(n.running == false) break;
 									int noteLength = splitLines[i].length() + 1;
 									System.out.println("charsProcessed=" + charsProcessed + ", noteLength=" + noteLength);
 									taText.requestFocusInWindow();
@@ -663,7 +679,7 @@ public class GUI {
 								}
 								Thread.sleep(1000); //This lets the game's music buffer catch up if the looping song has a very high tempo
 
-							}while(loopCheckBox.isSelected() && n.running);
+							} while (loopCheckBox.isSelected());
 							btPlayButton.setText("Play");
 							n.releaseHeldKey();
 						} catch (InterruptedException e) {
@@ -709,22 +725,22 @@ public class GUI {
 		}
 		frame.add(pnPanel0);
 		frame.setSize(675, 500);
-		frame.setTitle("TBbard");
+		frame.setTitle("Rebard");
 		frame.setResizable(true);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setAlwaysOnTop(true);
 		frame.setVisible(true);	
 		frame.requestFocusInWindow();
 	}
-
+	
+	/*
 	public void setOpenFile(JFrame frame, String fileName) {
-		System.out.println("Setting title to: " + fileName);
 		if (fileName.equals(""))
-			frame.setTitle("TBbard");
+			frame.setTitle("Rebard");
 		else {
 			fileLoaded = true;
-			frame.setTitle("TBbard - " + fileName);
+			frame.setTitle("Rebard - " + fileName);
 		}
-	}
+	}*/
 
 }
