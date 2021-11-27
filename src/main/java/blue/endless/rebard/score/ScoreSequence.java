@@ -3,13 +3,11 @@ package blue.endless.rebard.score;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import blue.endless.rebard.midi.SequenceMeta;
-
 /**
  * A "Part" represents the part of a musical piece played by one person on one instrument. Roughly equivalent to a MIDI Track.
  * This data format is very close to MIDI, having timestamped events arranged in a monotonic order.
  */
-public class TimedSequence {
+public class ScoreSequence {
 	private SequenceMeta meta = new SequenceMeta();
 	private TreeSet<SequenceEvent> data = new TreeSet<>((a, b)->Long.compareUnsigned(a.timestamp(), b.timestamp()));
 	

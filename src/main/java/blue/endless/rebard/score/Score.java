@@ -8,16 +8,16 @@ import java.util.Set;
 
 public class Score {
 	private HashMap<Integer, String> patches = new HashMap<>();
-	private ArrayList<TimedSequence> sequences = new ArrayList<>();
+	private ArrayList<ScoreSequence> sequences = new ArrayList<>();
 	
-	public Score(Map<Integer, String> patches, List<TimedSequence> sequences) {
+	public Score(Map<Integer, String> patches, List<ScoreSequence> sequences) {
 		this.patches.putAll(patches);
 		this.sequences.addAll(sequences);
 	}
 	
 	public int sequenceCount() { return sequences.size(); }
 	
-	public TimedSequence getSequence(int index) { return sequences.get(index); }
+	public ScoreSequence getSequence(int index) { return sequences.get(index); }
 	
 	public Set<Integer> getPatchNumbers() { return patches.keySet(); }
 	

@@ -1,4 +1,4 @@
-package blue.endless.rebard.midi;
+package blue.endless.rebard.score;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;

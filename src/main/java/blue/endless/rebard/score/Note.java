@@ -11,8 +11,11 @@ package blue.endless.rebard.score;
 public class Note {
 	
 	public static final int LOWEST_REPRESENTABLE_NOTE = 12*4; //C-3
+	public static final int HIGHEST_REPRESENTABLE_NOTE = 12*7; //C-6 (!)
 	
 	private static final String[] NOTES = { "C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B" };
+
+	
 	
 	public static String getNoteName(int note) {
 		int octave = (note / 12) - 1;

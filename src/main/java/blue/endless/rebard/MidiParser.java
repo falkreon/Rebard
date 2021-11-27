@@ -16,10 +16,10 @@ import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
 
-import blue.endless.rebard.midi.SequenceMeta;
 import blue.endless.rebard.score.Score;
 import blue.endless.rebard.score.SequenceEvent;
-import blue.endless.rebard.score.TimedSequence;
+import blue.endless.rebard.score.SequenceMeta;
+import blue.endless.rebard.score.ScoreSequence;
 
 public class MidiParser {
 
@@ -33,10 +33,10 @@ public class MidiParser {
 	}
 
 	public Score getScore(File f) throws Exception {
-		ArrayList<TimedSequence> sequences = new ArrayList<>();
+		ArrayList<ScoreSequence> sequences = new ArrayList<>();
 		
 		HashMap<Integer, SequenceEvent> heldNotes = new HashMap<>();
-		TimedSequence timedSequence = new TimedSequence();
+		ScoreSequence timedSequence = new ScoreSequence();
 
 		Sequence sequence = MidiSystem.getSequence(f);
 		
