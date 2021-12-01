@@ -10,7 +10,8 @@ public class SequencerThread extends Thread {
 	private ScoreSequence sequence;
 	private int countdown = 3;
 	private volatile boolean started = false;
-	private volatile boolean stillPlaying = false;
+	private volatile boolean paused = false;
+	private volatile boolean stopped = false;
 	private long lastTickMillis = 0L;
 	private long lastMidiTick = 0L;
 	private double midiTickBuffer = 0.0; //How many "fractional midi ticks" have we accumulated since the last playback tick?
@@ -30,22 +31,36 @@ public class SequencerThread extends Thread {
 	}
 	
 	public void pause() {
-		stillPlaying = false;
+		if (started && !stopped && !paused) {
+			synchronized(this) {
+				paused = true;
+			}
+		}
+	}
+	
+	public void unpause() {
+		if (started && !stopped && paused) {
+			synchronized(this) {
+				paused = false;
+				lastTickMillis = System.nanoTime() / 1_000_000L;
+				this.notify();
+			}
+		}
+	}
+	
+	boolean isPaused() {
+		return paused;
+	}
+	
+	boolean isStopped() {
+		return stopped;
 	}
 	
 	public void setPaused(boolean paused) {
-		if (!started) {
-			return; //We're trying to pause or resume a Sequence that hasn't started.
-		} else if (!paused && stillPlaying) {
-			return; //We're trying to resume playback of a Sequence that is already playing.
-		} else if (paused && !stillPlaying) {
-			return; //We're trying to pause a Sequence that's already paused.
-		}
-		
-		if (!paused) {
-			lastTickMillis = System.nanoTime() / 1_000_000L;
+		if (paused) {
+			unpause();
 		} else {
-			stillPlaying = false;
+			pause();
 		}
 	}
 	
@@ -55,14 +70,14 @@ public class SequencerThread extends Thread {
 		setSynth(synth);
 		lastTickMillis = System.nanoTime() / 1_000_000L;
 		started = true;
-		stillPlaying = true;
 		start();
 	}
 	
 	public void stopPlaying() {
-		stillPlaying = false;
-		started = false;
-		//this.notify(); //Wake the thread up if it's interrupted
+		stopped = true;
+		synchronized(this) {
+			this.notify();
+		}
 	}
 	
 	@Override
@@ -85,7 +100,7 @@ public class SequencerThread extends Thread {
 		System.out.println("MidiTicksPerMilli = "+midiTicksPerMilli);
 		long lastTimestamp = sequence.timeLength();
 		
-		while(stillPlaying) {
+		while(started & !stopped) {
 			//Time sync
 			long now = System.nanoTime() / 1_000_000L;
 			long elapsed = now - lastTickMillis;
@@ -111,13 +126,25 @@ public class SequencerThread extends Thread {
 			try {
 				Thread.sleep(1); //Yield is a no-op most of the time, give other Threads a chance to run
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
 			}
 			
 			if (lastMidiTick>=lastTimestamp) {
-				stillPlaying = false;
-				started = false;
+				stopped = true;
 				break;
+			}
+			
+			if (paused & !stopped) {
+				System.out.println("Entering pause state");
+				while (paused) {
+					System.out.println("Waiting...");
+					try {
+						synchronized(this) {
+							this.wait();
+						}
+					} catch (InterruptedException e) {} //Interruptions/Notifies are expected.
+				}
+				System.out.println("Leaving pause state");
 			}
 		}
 		System.out.println("Completed.");

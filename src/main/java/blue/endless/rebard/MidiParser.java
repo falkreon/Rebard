@@ -23,12 +23,6 @@ import blue.endless.rebard.score.ScoreSequence;
 
 public class MidiParser {
 
-	String lastNote = "";
-	int lastOctave;
-	
-	boolean allNull = true;
-
-
 	public MidiParser() {
 	}
 
@@ -39,6 +33,7 @@ public class MidiParser {
 		ScoreSequence timedSequence = new ScoreSequence();
 
 		Sequence sequence = MidiSystem.getSequence(f);
+		
 		
 		Map<Integer, String> patches = new HashMap<>();
 		for(Instrument instrument : MidiSystem.getSynthesizer().getDefaultSoundbank().getInstruments()) {
@@ -71,17 +66,11 @@ public class MidiParser {
 							SequenceEvent noteOnEvt = new SequenceEvent(event.getTick(), SequenceEvent.Type.NOTE_ON, key, key, velocity);
 							timedSequence.add(noteOnEvt);
 							heldNotes.put(key, noteOnEvt);
-							//System.out.println(noteOnEvt);
-							//channels[0].noteOn(key, 100);
 						} else {
 							SequenceEvent previousNote = heldNotes.remove(key);
 							if (previousNote!=null) {
 								SequenceEvent noteCutEvt = new SequenceEvent(event.getTick(), SequenceEvent.Type.NOTE_CUT, key, key, 0);
 								timedSequence.add(noteCutEvt);
-								//System.out.println(noteCutEvt);
-								//channels[0].noteOff(key);
-							} else {
-								//System.out.println("Extraneous NOTE_CUT on key "+key);
 							}
 						}
 						break;
@@ -90,10 +79,6 @@ public class MidiParser {
 						if (previousNote!=null) {
 							SequenceEvent noteOffEvt = new SequenceEvent(event.getTick(), SequenceEvent.Type.NOTE_OFF, key, key, 0);
 							timedSequence.add(noteOffEvt);
-							//System.out.println(noteOffEvt);
-							//channels[0].noteOff(key);
-						} else {
-							//System.out.println("Extraneous NOTE_OFF on key "+key);
 						}
 						break;
 					case ShortMessage.PROGRAM_CHANGE:

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class Score {
+	private String name = "untitled";
 	private HashMap<Integer, String> patches = new HashMap<>();
 	private ArrayList<ScoreSequence> sequences = new ArrayList<>();
 	
@@ -24,4 +25,7 @@ public class Score {
 	public String getPatch(int index) {
 		return patches.get(index);
 	}
+	
+	public void setName(String name) { this.name = name; }
+	public String getName() { return this.name; }
 }
