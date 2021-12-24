@@ -1,6 +1,8 @@
 package blue.endless.rebard;
 
 import java.util.SortedSet;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import blue.endless.rebard.score.ScoreSequence;
 import blue.endless.rebard.score.SequenceEvent;
@@ -16,10 +18,15 @@ public class SequencerThread extends Thread {
 	private long lastMidiTick = 0L;
 	private double midiTickBuffer = 0.0; //How many "fractional midi ticks" have we accumulated since the last playback tick?
 	private ScoreSynth synth = null;
+	private LongConsumer onUpdate;
 	
 	public void setSequence(ScoreSequence sequence) {
 		if (started) throw new IllegalStateException("Cannot set the Sequence of an active SequencerThread");
 		this.sequence = sequence;
+	}
+	
+	public void onUpdate(LongConsumer onUpdate) {
+		this.onUpdate = onUpdate;
 	}
 	
 	public void setCountdown(int seconds) {
@@ -96,7 +103,10 @@ public class SequencerThread extends Thread {
 			lastTickMillis = System.nanoTime() / 1_000_000L;
 		}
 		
-		double midiTicksPerMilli = (sequence.getMetadata().getBPM() * sequence.getMetadata().getPPQ()) / 60_000.0;
+		//double midiTicksPerMilli = (sequence.getMetadata().getBPM() * sequence.getMetadata().getPPQ()) / 60_000.0;
+		double midiTicksPerMilli = (120 * 192.0) / 60_000.0;
+		double curBPM = 120.0;
+		double curPPQ = sequence.getMetadata().getPPQ();
 		System.out.println("MidiTicksPerMilli = "+midiTicksPerMilli);
 		long lastTimestamp = sequence.timeLength();
 		
@@ -121,8 +131,19 @@ public class SequencerThread extends Thread {
 			
 			//Play notes
 			if (synth!=null) {
-				for(SequenceEvent evt : toPlay) synth.consumeEvent(evt);
+				for(SequenceEvent evt : toPlay) {
+					if (evt.type()==SequenceEvent.Type.TEMPO_CHANGE) {
+						curBPM = evt.arg2();
+						midiTicksPerMilli = (curPPQ * curBPM) / 60_000.0;
+						System.out.println("Tempo Change: "+curPPQ+" * "+curBPM+" == "+midiTicksPerMilli);
+					} else {
+						synth.consumeEvent(evt);
+					}
+				}
 			}
+			
+			if (onUpdate!=null) onUpdate.accept(elapsed);
+			
 			try {
 				Thread.sleep(1); //Yield is a no-op most of the time, give other Threads a chance to run
 			} catch (InterruptedException e) {
@@ -135,20 +156,24 @@ public class SequencerThread extends Thread {
 			}
 			
 			if (paused & !stopped) {
-				System.out.println("Entering pause state");
+				//System.out.println("Entering pause state");
 				while (paused) {
-					System.out.println("Waiting...");
+					System.out.println("Paused");
 					try {
 						synchronized(this) {
 							this.wait();
 						}
 					} catch (InterruptedException e) {} //Interruptions/Notifies are expected.
 				}
-				System.out.println("Leaving pause state");
+				//System.out.println("Leaving pause state");
 			}
 		}
-		System.out.println("Completed.");
+		System.out.println("Stopped");
 		
 		if (synth!=null) synth.stopAll();
+	}
+
+	public long getTimestamp() {
+		return lastMidiTick;
 	}
 }

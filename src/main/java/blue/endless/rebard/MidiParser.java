@@ -42,6 +42,12 @@ public class MidiParser {
 		
 		SequenceMeta midiMeta = new SequenceMeta();
 		
+		if (sequence.getDivisionType()==Sequence.PPQ) {
+			System.out.println("PPQ: "+sequence.getResolution());
+			midiMeta.setPPQ(sequence.getResolution());
+		}
+		
+		
 		for (Track track :  sequence.getTracks()) {
 			
 			//long prevTick = 0;
@@ -93,18 +99,25 @@ public class MidiParser {
 					
 					midiMeta.applyMeta(meta.getType(), meta.getData());
 					
-					if (meta.getType()==0x58) {
+					if (meta.getType()==0x51) {
+						//System.out.println("Tempo Change");
 						byte[] d = meta.getData();
-						System.out.println(Arrays.toString(d));
-						if (d.length>=4) {
-							int numerator = d[0];
-							int denominator = (int) Math.pow(2, d[1]);
-							
-							// Honestly the metronome timings and 32nd-notes-per-24-midi-clocks means nothing to me.
-							// It certainly doesn't tell me what the BPM is.
-							
-							System.out.println("Time Signature: "+numerator+"/"+denominator);
+						//System.out.println(Arrays.toString(d));
+						if (d.length>=3) {
+							int usecsPerQuarter = 0;
+							usecsPerQuarter |= (d[0] & 0xFF) << 16;
+							usecsPerQuarter |= (d[1] & 0xFF) << 8;
+							usecsPerQuarter |= (d[2] & 0xFF);
+							double bpm = 60_000_000.0 / (double) usecsPerQuarter;
+							SequenceEvent evt = new SequenceEvent(event.getTick(), SequenceEvent.Type.TEMPO_CHANGE, 0, usecsPerQuarter, (int)bpm);
+							timedSequence.add(evt);
+						} else {
+							//System.out.println("Len="+d.length);
 						}
+					//} else  if (meta.getType()==0x51) {
+						
+					} else {
+						//System.out.println("Midi Meta: "+Integer.toHexString(meta.getType()));
 					}
 				} else if (msg instanceof SysexMessage) {
 					System.out.println("SysexMessage ("+msg.getLength()+"B)");

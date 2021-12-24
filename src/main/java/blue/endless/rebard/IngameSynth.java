@@ -20,6 +20,7 @@ public class IngameSynth implements ScoreSynth {
 	private HashMap<Integer, SequenceEvent> activeNotes = new HashMap<>();
 	private boolean foldNotes = true;
 	private Robot robot;
+	private boolean lastNoteWasOn = false;
 	
 	private static int[] activeBinds = fullTBBardKeyboardBinds.clone();
 	
@@ -44,23 +45,36 @@ public class IngameSynth implements ScoreSynth {
 			}
 			
 			int keyToPlay = getKeyForNote(noteToPlay);
-			//if (keyToPlay==-1) {
-			//	System.out.println("Note: "+evt.arg1()+" NoteToPlay: "+noteToPlay+" UNBOUND");
-			//	return;
-			//}
 			
-			/*SequenceEvent priorNote = activeNotes.get(noteToPlay);
-			if (priorNote!=null) {
-				robot.keyRelease(keyToPlay);
-			}*/
 			stopAll();
-			robot.waitForIdle();
+			if (!lastNoteWasOn) {
+				/*
+				 * Some rationale here: at the other end, there's likely to be a scancode buffer array updating each
+				 * frame by consuming key events from the OS (and therefore from the robot). There is a bad interaction
+				 * potentially between the AWT Event Dispatch Thread (which processes outgoing Robot events too) and
+				 * this presumed input buffer which is polled to figure out of a bard piano key is pressed. If a key-on
+				 * and key-off occur between polls, the keypress might be undetectable by game logic.
+				 * 
+				 * A decent fix is to consider that this situation only ever happens on the edge from key-on to key-off
+				 * events. We can then detect this edge transition and insert a slight pause between them while not
+				 * affecting the cases when keys are rapid-firing on to form a chord.
+				 * 
+				 * The only remaining problem is the edge transitions occurring due to automatically stopped keys, but
+				 * we won't worry about those until / unless problems pop up.
+				 */
+				//System.out.print("[+] ");
+				
+				lastNoteWasOn = true;
+				//robot.waitForIdle();
+			} else {
+				//System.out.print("    ");
+			}
 			
-			System.out.println(evt);
+			//System.out.println(evt);
 			
 			robot.keyPress(keyToPlay);
 			activeNotes.put(noteToPlay, evt);
-			robot.waitForIdle();
+			//robot.waitForIdle();
 			break;
 		}
 		case NOTE_OFF: {
@@ -74,10 +88,19 @@ public class IngameSynth implements ScoreSynth {
 			int keyToPlay = getKeyForNote(noteToPlay);
 			if (keyToPlay==-1) return;
 			
+			if (lastNoteWasOn) {
+				//System.out.print("[-] ");
+				lastNoteWasOn = false;
+				robot.waitForIdle();
+			} else {
+				//System.out.print("    ");
+			}
+			
 			SequenceEvent priorNote = activeNotes.get(noteToPlay);
 			if (priorNote!=null) {
 				robot.keyRelease(keyToPlay);
 			}
+			//System.out.println(evt);
 			break;
 		}
 		default:

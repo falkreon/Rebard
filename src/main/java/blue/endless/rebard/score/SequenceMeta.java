@@ -1,7 +1,6 @@
 package blue.endless.rebard.score;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 public class SequenceMeta {
 	public static final int SEQUENCE_NAME = 0x03;
@@ -9,12 +8,13 @@ public class SequenceMeta {
 	public static final int END_OF_TRACK = 0x2F; //Ignore
 	public static final int TEMPO = 0x51;
 	public static final int KEY_SIGNATURE = 0x59;
+	public static final int TIME_SIGNATURE = 0x00;
 	
 	private transient boolean parsedFirstTempo = false;
 	
 	protected String name = "untitled";
 	protected double bpm = 120.0;
-	protected int ppq = 480;
+	protected int ppq = 60;
 	protected int timeSigNumerator = 4;
 	protected int timeSigDenominator = 4;
 	protected String key = "C";
@@ -40,14 +40,15 @@ public class SequenceMeta {
 				bpm = 60_000_000.0 / (double) usecsPerQuarter;
 				parsedFirstTempo = true;
 			} else {
-				System.out.println("Note: Song has tempo changes that will be ignored");
+				//System.out.println("Note: Song has tempo changes that will be ignored");
 			}
 			break;
 		case KEY_SIGNATURE:
 			key = new String(data, StandardCharsets.UTF_8);
 			if (key==null || key.isBlank()) key = "C";
 			break;
-		
+		case TIME_SIGNATURE:
+			break;
 		default:
 		
 		}
@@ -62,5 +63,8 @@ public class SequenceMeta {
 			"'ppq': "+ppq+
 			" }";
 				
+	}
+	public void setPPQ(int resolution) {
+		this.ppq = resolution;
 	}
 }

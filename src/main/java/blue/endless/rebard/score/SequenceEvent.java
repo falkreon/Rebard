@@ -17,7 +17,10 @@ public record SequenceEvent(long timestamp, Type type, int column, int arg1, int
 		NOTE_OFF,
 		
 		/** Abruptly stop a note from playing further. The column is indicated by pitch, or -1 for all notes. */
-		NOTE_CUT;
+		NOTE_CUT,
+		
+		/** Change the tempo of the sequence. */
+		TEMPO_CHANGE;
 	}
 	
 	

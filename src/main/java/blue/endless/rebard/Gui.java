@@ -20,8 +20,10 @@ import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Image;
@@ -31,26 +33,50 @@ import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetDropEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.List;
 
 import javax.swing.filechooser.FileFilter;
 
+import blue.endless.rebard.gui.ColorTheme;
+import blue.endless.rebard.gui.LinearPanel;
+import blue.endless.rebard.gui.ScoreView;
+import blue.endless.rebard.gui.SimpleLabel;
 import blue.endless.rebard.score.Score;
 
 public class Gui {
+	private static final int REPAINT_DELAY = 300;
+	private static String fontName = null;
+	
 	//Thread playingThread;
 	//Thread countdownThread;
 	Score activeScore;
 	SequencerThread activeThread;
 	
-	JFrame frame = new JFrame();
+	JFrame frame = new JFrame() {
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public void paint(Graphics g) {
+			super.paint(g);
+			if (activeThread!=null && activeThread.isAlive() && !activeThread.isPaused() && !activeThread.isStopped()) {
+				scoreView.setTimestamp(activeThread.getTimestamp());
+				//this.repaint(REPAINT_DELAY);
+			}
+		}
+	};
 	JButton fileIconButton = new JButton();
-	JLabel fileLabel = new JLabel("");
+	//JLabel fileLabel = new JLabel("");
+	SimpleLabel fileLabel = new SimpleLabel();
+	ScoreView scoreView = new ScoreView();
 	
 	Image playImage;
 	Image noFileImage;
@@ -123,6 +149,9 @@ public class Gui {
 	});
 
 	public Gui() {
+		ColorTheme defaultTheme = new ColorTheme();
+		defaultTheme.panelBackground = (0xFF_303030);
+		
 		noFileImage = loadImage("/mime/none.png", 64);
 		midiFileImage = loadImage("/mime/audio_midi.png", 64);
 		
@@ -139,26 +168,35 @@ public class Gui {
 			frame.setJMenuBar(menus);
 		}
 		
+		menus.setBackground(ColorTheme.argb(defaultTheme.menuBackground));
+		menus.setForeground(ColorTheme.argb(defaultTheme.menuText));
+		menus.setBorder(null);
+		
 		JMenu fileMenu = new JMenu("File");
+		fileMenu.setForeground(ColorTheme.argb(defaultTheme.panelText));
 		fileMenu.add(openFileAction);
 		fileMenu.add(closeFileAction);
 		menus.add(fileMenu);
 		
 		
-		JPanel playlistPanel = new JPanel();
-		playlistPanel.setBorder(BorderFactory.createLineBorder(new Color(100,100,100), 8));
 		
-		playlistPanel.setBackground(new Color(40,40,40));
-		frame.getContentPane().add(playlistPanel);
 		
-		JPanel focusPanel = new JPanel();
-		focusPanel.setLayout(new BoxLayout(focusPanel, BoxLayout.Y_AXIS));
+		LinearPanel playlistPanel = new LinearPanel(LinearPanel.VERTICAL);
+		playlistPanel.setBorderThickness(6);
+		playlistPanel.setTheme(defaultTheme);
+		playlistPanel.add(Box.createHorizontalStrut(40));
+		//frame.getContentPane().add(playlistPanel);
+		
+		LinearPanel focusPanel = new LinearPanel(LinearPanel.VERTICAL);
 		frame.getContentPane().add(focusPanel);
 		
-		JPanel filePanel = new JPanel();
-		filePanel.setLayout(new BoxLayout(filePanel, BoxLayout.X_AXIS));
+		LinearPanel filePanel = new LinearPanel(LinearPanel.HORIZONTAL);
+		filePanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
+		
 		focusPanel.add(filePanel);
+		focusPanel.add(scoreView);
 		focusPanel.add(Box.createVerticalGlue());
+		
 		
 		//BufferedImage missingFileImage;
 		//try {
@@ -184,27 +222,32 @@ public class Gui {
 		fileLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 48));
 		
 		filePanel.add(fileLabel);
-		filePanel.setBackground(new Color(210, 255, 210));
+		//filePanel.setBackground(new Color(210, 255, 210));
 		
 		
-		filePanel.add(Box.createHorizontalGlue());
+		//filePanel.add(Box.createHorizontalGlue());
 		
-		BufferedImage playImage;
+		Image playSpeakerImage = loadImage("/assets/play_speaker.png", -1);
+		Image playKeyboardImage = loadImage("/assets/play_keyboard.png", -1);
+		/*
 		try {
-			playImage = ImageIO.read(Gui.class.getResourceAsStream("/assets/play.png"));
+			playSpeakerImage = ImageIO.read(Gui.class.getResourceAsStream("/assets/play.png"));
 		} catch (Exception e2) {
 			e2.printStackTrace();
-			playImage = new BufferedImage(16,16,BufferedImage.TYPE_INT_ARGB);
-		}
-		JButton playButton = new JButton(new ImageIcon(playImage.getScaledInstance(64, 64, Image.SCALE_DEFAULT)));
+			playSpeakerImage = new BufferedImage(16,16,BufferedImage.TYPE_INT_ARGB);
+		}*/
+		JButton playButton = new JButton(new ImageIcon(playKeyboardImage));
 		playButton.createToolTip().setTipText("Play using Keyboard");
 		playButton.addActionListener((evt)->{
 			if (activeScore==null) return;
 			if (activeThread==null) {
 				activeThread = new SequencerThread();
+				activeThread.onUpdate(this::onPlayerUpdate);
 				activeThread.play(activeScore.getSequence(0), 3, new IngameSynth());
+				//frame.repaint(REPAINT_DELAY);
 			} else if (activeThread.isPaused()) {
 				activeThread.unpause();
+				//frame.repaint(REPAINT_DELAY);
 			} else {
 				activeThread.pause();
 			}
@@ -213,15 +256,18 @@ public class Gui {
 		playButton.setBackground(new Color(0,0,0,0));
 		filePanel.add(playButton);
 		
-		JButton previewButton = new JButton(new ImageIcon(playImage.getScaledInstance(64, 64, Image.SCALE_DEFAULT)));
+		JButton previewButton = new JButton(new ImageIcon(playSpeakerImage));
 		previewButton.createToolTip().setTipText("Preview in General Midi");
 		previewButton.addActionListener((evt)->{
 			if (activeScore==null) return;
 			if (activeThread==null) {
 				activeThread = new SequencerThread();
+				activeThread.onUpdate(this::onPlayerUpdate);
 				activeThread.play(activeScore.getSequence(0), 0, new GeneralMidiSynth());
+				//frame.repaint(REPAINT_DELAY);
 			} else if (activeThread.isPaused()) {
 				activeThread.unpause();
+				//frame.repaint(REPAINT_DELAY);
 			} else {
 				activeThread.pause();
 			}
@@ -229,6 +275,29 @@ public class Gui {
 		previewButton.setBorder(null);
 		previewButton.setBackground(new Color(0,0,0,0));
 		filePanel.add(previewButton);
+		
+		
+		focusPanel.setTheme(defaultTheme);
+		frame.pack();
+		final int _maxHeight = frame.getHeight();
+		
+		frame.addComponentListener(new ComponentListener() {
+			private int maxHeight = _maxHeight;
+			@Override
+			public void componentResized(ComponentEvent e) {
+				frame.setSize(frame.getWidth(), Math.max(frame.getHeight(), maxHeight)); //Might crash
+			}
+
+			@Override
+			public void componentMoved(ComponentEvent e) {}
+
+			@Override
+			public void componentShown(ComponentEvent e) {}
+
+			@Override
+			public void componentHidden(ComponentEvent e) {}
+			
+		});
 		
 		frame.setDropTarget(new DropTarget() {
 			private static final long serialVersionUID = 1L;
@@ -288,11 +357,13 @@ public class Gui {
 			fileIconButton.setIcon(new ImageIcon(noFileImage));
 			fileLabel.setText("");
 			frame.setTitle("Rebard");
+			scoreView.setSequence(null);
 		} else {
 			this.activeScore = score;
 			fileIconButton.setIcon(new ImageIcon(midiFileImage));
 			fileLabel.setText(f.getName());
 			frame.setTitle("Rebard - "+f.getName());
+			scoreView.setSequence(score.getSequence(0));
 		}
 	}
 	
@@ -326,5 +397,28 @@ public class Gui {
 		icon.paintIcon(new JLabel(), g, 0, 0);
 		g.dispose();
 		return buffer.getScaledInstance((int)(scaledHeight*aspectRatio), scaledHeight, Image.SCALE_DEFAULT);
+	}
+	
+	public static String getFancyFontName() {
+		if (fontName!=null) return fontName;
+		for(String s : GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames()) {
+			System.out.println(s);
+		}
+		
+		
+		fontName = Font.DIALOG;
+		return fontName;
+	}
+	
+	private static final long MILLIS_PER_DRAW = (long) ((1.0 / 60.0) * 1_000.0);
+	private long millisSinceLastDraw = 0;
+	
+	private void onPlayerUpdate(long elapsed) {
+		millisSinceLastDraw += elapsed;
+		if (millisSinceLastDraw>MILLIS_PER_DRAW) {
+			millisSinceLastDraw = millisSinceLastDraw % MILLIS_PER_DRAW; //We don't care about any whole frames we missed
+			
+			frame.repaint();
+		}
 	}
 }

@@ -19,7 +19,6 @@ public class GeneralMidiSynth implements ScoreSynth {
 	
 	private HashMap<Integer, SequenceEvent> activeNotes = new HashMap<>();
 	
-	
 	public GeneralMidiSynth() {
 		try {
 			synth = MidiSystem.getSynthesizer();
@@ -75,12 +74,13 @@ public class GeneralMidiSynth implements ScoreSynth {
 				midiChannel.noteOff(noteToPlay);
 			}
 			
-			System.out.println(evt);
+			//System.out.println(evt);
 			
 			midiChannel.noteOn(noteToPlay, 100);
 			activeNotes.put(noteToPlay, evt);
 			break;
 		}
+		case NOTE_CUT:
 		case NOTE_OFF: {
 			int noteToPlay = evt.arg1();
 			

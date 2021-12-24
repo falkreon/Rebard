@@ -9,7 +9,21 @@ import java.util.TreeSet;
  */
 public class ScoreSequence {
 	private SequenceMeta meta = new SequenceMeta();
-	private TreeSet<SequenceEvent> data = new TreeSet<>((a, b)->Long.compareUnsigned(a.timestamp(), b.timestamp()));
+	private TreeSet<SequenceEvent> data = new TreeSet<>((a, b)->{
+		if (a.timestamp()==b.timestamp()) {
+			boolean aNote = (a.type()==SequenceEvent.Type.NOTE_ON);
+			boolean bNote = (b.type()==SequenceEvent.Type.NOTE_ON);
+			if (aNote && !bNote) {
+				return 1;
+			} else if (bNote && !aNote) {
+				return -1;
+			} else {
+				return 0;
+			}
+		} else {
+			return Long.compareUnsigned(a.timestamp(), b.timestamp());
+		}
+	});
 	
 	/**
 	 * Grab a view of the SequenceEvents in a timeslice.
